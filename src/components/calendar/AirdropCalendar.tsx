@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/solid'
+import { CalendarIcon, MapPinIcon, ClockIcon } from '@heroicons/react/24/outline'
 import {
   add,
   eachDayOfInterval,
@@ -18,6 +19,7 @@ import {
 } from 'date-fns'
 import { classNames } from '@/lib/utils'
 import { Database } from '@/types/supabase'
+import { motion, AnimatePresence } from 'framer-motion'
 
 type Airdrop = Database['public']['Tables']['airdrops']['Row']
 
@@ -44,6 +46,8 @@ export default function AirdropCalendar({
   const today = startOfToday()
   const [selectedDay, setSelectedDay] = useState(today)
   const [currentMonth, setCurrentMonth] = useState(format(today, 'MMM-yyyy'))
+  const [direction, setDirection] = useState(0)
+  const [isAnimating, setIsAnimating] = useState(false)
   const firstDayCurrentMonth = parse(currentMonth, 'MMM-yyyy', new Date())
 
   const days = eachDayOfInterval({
@@ -56,29 +60,50 @@ export default function AirdropCalendar({
   )
 
   function previousMonth() {
+    if (isAnimating) return
+    setDirection(-1)
+    setIsAnimating(true)
     const firstDayNextMonth = add(firstDayCurrentMonth, { months: -1 })
     setCurrentMonth(format(firstDayNextMonth, 'MMM-yyyy'))
   }
 
   function nextMonth() {
+    if (isAnimating) return
+    setDirection(1)
+    setIsAnimating(true)
     const firstDayNextMonth = add(firstDayCurrentMonth, { months: 1 })
     setCurrentMonth(format(firstDayNextMonth, 'MMM-yyyy'))
   }
 
+  useEffect(() => {
+    if (isAnimating) {
+      const timer = setTimeout(() => setIsAnimating(false), 200)
+      return () => clearTimeout(timer)
+    }
+  }, [isAnimating])
+
   return (
-    <div className="p-8 bg-white rounded-2xl shadow-sm">
-      <div className="max-w-md px-4 mx-auto sm:px-7 md:max-w-4xl md:px-6">
+    <div className="p-4 md:p-8 bg-white rounded-2xl shadow-sm">
+      <div className="max-w-md mx-auto md:max-w-4xl">
         <div className="md:grid md:grid-cols-2 md:divide-x md:divide-gray-200">
-          <div className="md:pr-14">
-            <div className="flex items-center">
-              <h2 className="flex-auto text-xl font-semibold text-gray-900">
+          <div className="pr-0 md:pr-14">
+            <div className="flex items-center mb-8">
+              <motion.h2
+                key={currentMonth}
+                initial={{ y: direction * 10, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: -direction * 10, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="flex-auto text-xl font-semibold text-gray-900"
+              >
                 {format(firstDayCurrentMonth, 'MMMM yyyy')}
-              </h2>
+              </motion.h2>
               <div className="flex space-x-2">
                 <button
                   type="button"
                   onClick={previousMonth}
-                  className="p-2 text-gray-400 hover:text-gray-500 transition-colors duration-200 rounded-full hover:bg-gray-100"
+                  disabled={isAnimating}
+                  className="p-2 text-gray-400 hover:text-gray-500 transition-colors duration-200 rounded-full hover:bg-gray-100 disabled:opacity-50"
                 >
                   <span className="sr-only">Previous month</span>
                   <ChevronLeftIcon className="w-5 h-5" aria-hidden="true" />
@@ -86,14 +111,15 @@ export default function AirdropCalendar({
                 <button
                   type="button"
                   onClick={nextMonth}
-                  className="p-2 text-gray-400 hover:text-gray-500 transition-colors duration-200 rounded-full hover:bg-gray-100"
+                  disabled={isAnimating}
+                  className="p-2 text-gray-400 hover:text-gray-500 transition-colors duration-200 rounded-full hover:bg-gray-100 disabled:opacity-50"
                 >
                   <span className="sr-only">Next month</span>
                   <ChevronRightIcon className="w-5 h-5" aria-hidden="true" />
                 </button>
               </div>
             </div>
-            <div className="grid grid-cols-7 mt-8 text-xs leading-6 text-center text-gray-500">
+            <div className="grid grid-cols-7 text-xs leading-6 text-center text-gray-500">
               <div className="font-semibold">S</div>
               <div className="font-semibold">M</div>
               <div className="font-semibold">T</div>
@@ -102,113 +128,168 @@ export default function AirdropCalendar({
               <div className="font-semibold">F</div>
               <div className="font-semibold">S</div>
             </div>
-            <div className="grid grid-cols-7 mt-2 text-sm">
-              {days.map((day, dayIdx) => {
-                const hasAirdrop = airdrops.some((airdrop) =>
-                  airdrop.deadline ? isSameDay(parseISO(airdrop.deadline), day) : false
-                )
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentMonth}
+                initial={{ x: direction * 50, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: -direction * 50, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="grid grid-cols-7 mt-2 text-sm"
+              >
+                {days.map((day, dayIdx) => {
+                  const hasAirdrop = airdrops.some((airdrop) =>
+                    airdrop.deadline ? isSameDay(parseISO(airdrop.deadline), day) : false
+                  )
 
-                return (
-                  <div
-                    key={day.toString()}
-                    className={classNames(
-                      dayIdx === 0 ? colStartClasses(getDay(day)) : '',
-                      'py-2'
-                    )}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedDay(day)
-                        onSelectDate?.(day)
-                      }}
+                  return (
+                    <div
+                      key={day.toString()}
                       className={classNames(
-                        isEqual(day, selectedDay) && 'text-white',
-                        !isEqual(day, selectedDay) &&
-                          isToday(day) &&
-                          'text-blue-600',
-                        !isEqual(day, selectedDay) &&
-                          !isToday(day) &&
-                          isSameMonth(day, firstDayCurrentMonth) &&
-                          'text-gray-900',
-                        !isEqual(day, selectedDay) &&
-                          !isToday(day) &&
-                          !isSameMonth(day, firstDayCurrentMonth) &&
-                          'text-gray-400',
-                        isEqual(day, selectedDay) &&
-                          isToday(day) &&
-                          'bg-blue-600',
-                        isEqual(day, selectedDay) &&
-                          !isToday(day) &&
-                          'bg-gray-900',
-                        !isEqual(day, selectedDay) && 'hover:bg-gray-100',
-                        (isEqual(day, selectedDay) || isToday(day)) &&
-                          'font-semibold',
-                        hasAirdrop && !isEqual(day, selectedDay) && 'bg-blue-50 hover:bg-blue-100',
-                        'mx-auto flex h-9 w-9 items-center justify-center rounded-full transition-all duration-200'
+                        dayIdx === 0 ? colStartClasses(getDay(day)) : '',
+                        'py-2'
                       )}
                     >
-                      <time dateTime={format(day, 'yyyy-MM-dd')}>
-                        {format(day, 'd')}
-                      </time>
-                    </button>
-                    {hasAirdrop && !isEqual(day, selectedDay) && (
-                      <div className="w-1 h-1 mx-auto mt-1">
-                        <div className="w-1 h-1 rounded-full bg-blue-600"></div>
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedDay(day)
+                          onSelectDate?.(day)
+                        }}
+                        className={classNames(
+                          isEqual(day, selectedDay) && 'text-white',
+                          !isEqual(day, selectedDay) &&
+                            isToday(day) &&
+                            'text-blue-600',
+                          !isEqual(day, selectedDay) &&
+                            !isToday(day) &&
+                            isSameMonth(day, firstDayCurrentMonth) &&
+                            'text-gray-900',
+                          !isEqual(day, selectedDay) &&
+                            !isToday(day) &&
+                            !isSameMonth(day, firstDayCurrentMonth) &&
+                            'text-gray-400',
+                          isEqual(day, selectedDay) &&
+                            isToday(day) &&
+                            'bg-blue-600',
+                          isEqual(day, selectedDay) &&
+                            !isToday(day) &&
+                            'bg-gray-900',
+                          !isEqual(day, selectedDay) && 'hover:bg-gray-100',
+                          (isEqual(day, selectedDay) || isToday(day)) &&
+                            'font-semibold',
+                          hasAirdrop &&
+                            !isEqual(day, selectedDay) &&
+                            'bg-blue-50 hover:bg-blue-100',
+                          'mx-auto flex h-9 w-9 items-center justify-center rounded-full transition-all duration-200'
+                        )}
+                      >
+                        <time dateTime={format(day, 'yyyy-MM-dd')}>
+                          {format(day, 'd')}
+                        </time>
+                      </button>
+                      {hasAirdrop && !isEqual(day, selectedDay) && (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="w-1 h-1 mx-auto mt-1"
+                        >
+                          <div className="w-1 h-1 rounded-full bg-blue-600"></div>
+                        </motion.div>
+                      )}
+                    </div>
+                  )
+                })}
+              </motion.div>
+            </AnimatePresence>
           </div>
           <section className="mt-12 md:mt-0 md:pl-14">
-            <h2 className="font-semibold text-gray-900 text-lg">
-              Airdrops for{' '}
-              <time dateTime={format(selectedDay, 'yyyy-MM-dd')}>
-                {format(selectedDay, 'MMM dd, yyy')}
-              </time>
-            </h2>
-            <ol className="mt-6 space-y-2 text-sm leading-6">
-              {selectedDayAirdrops.length > 0 ? (
-                selectedDayAirdrops.map((airdrop) => (
-                  <li
-                    key={airdrop.id}
-                    className="group flex items-center space-x-4 rounded-xl px-4 py-3 focus-within:bg-gray-50 hover:bg-gray-50 transition-colors duration-200"
+            <div className="sticky top-0 bg-white pt-4 pb-4 -mx-4 px-4 md:mx-0 md:px-0">
+              <h2 className="font-semibold text-gray-900 text-lg flex items-center gap-2">
+                <CalendarIcon className="h-5 w-5 text-gray-400" />
+                <span>
+                  Airdrops for{' '}
+                  <time dateTime={format(selectedDay, 'yyyy-MM-dd')}>
+                    {format(selectedDay, 'MMM dd, yyy')}
+                  </time>
+                </span>
+              </h2>
+            </div>
+            <motion.div
+              layout
+              className="space-y-2 text-sm leading-6 max-h-[calc(100vh-20rem)] overflow-y-auto pr-2 custom-scrollbar"
+            >
+              <AnimatePresence mode="wait">
+                {selectedDayAirdrops.length > 0 ? (
+                  <motion.ol className="space-y-2">
+                    {selectedDayAirdrops.map((airdrop) => (
+                      <motion.li
+                        key={airdrop.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.2 }}
+                        className="group rounded-xl px-4 py-3 hover:bg-gray-50 transition-colors duration-200 border border-gray-100"
+                      >
+                        <div className="flex-auto">
+                          <p className="text-gray-900 font-medium">{airdrop.title}</p>
+                          <div className="mt-1 flex items-center gap-4 text-gray-500">
+                            {airdrop.deadline && (
+                              <span className="flex items-center gap-1">
+                                <ClockIcon className="h-4 w-4" />
+                                {format(parseISO(airdrop.deadline), 'h:mm a')}
+                              </span>
+                            )}
+                            {airdrop.url && (
+                              <span className="flex items-center gap-1">
+                                <MapPinIcon className="h-4 w-4" />
+                                <a
+                                  href={airdrop.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 hover:text-blue-800"
+                                >
+                                  View Link
+                                </a>
+                              </span>
+                            )}
+                          </div>
+                          {airdrop.description && (
+                            <p className="mt-2 text-gray-500 text-sm line-clamp-2">
+                              {airdrop.description}
+                            </p>
+                          )}
+                        </div>
+                        <div className="mt-3 flex items-center justify-between">
+                          <div
+                            className={classNames(
+                              airdrop.status === 'completed'
+                                ? 'bg-green-50 text-green-700 border-green-200'
+                                : airdrop.status === 'missed'
+                                ? 'bg-red-50 text-red-700 border-red-200'
+                                : 'bg-yellow-50 text-yellow-700 border-yellow-200',
+                              'rounded-full px-3 py-1 text-xs font-medium border transition-colors duration-200'
+                            )}
+                          >
+                            {airdrop.status.charAt(0).toUpperCase() +
+                              airdrop.status.slice(1)}
+                          </div>
+                        </div>
+                      </motion.li>
+                    ))}
+                  </motion.ol>
+                ) : (
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="text-gray-500 text-center py-8 bg-gray-50 rounded-lg"
                   >
-                    <div className="flex-auto">
-                      <p className="text-gray-900 font-medium">{airdrop.title}</p>
-                      <p className="mt-0.5 text-gray-500">
-                        {airdrop.deadline &&
-                          format(parseISO(airdrop.deadline), 'h:mm a')}
-                      </p>
-                      {airdrop.description && (
-                        <p className="mt-2 text-gray-500 text-sm line-clamp-2">
-                          {airdrop.description}
-                        </p>
-                      )}
-                    </div>
-                    <div
-                      className={classNames(
-                        airdrop.status === 'completed'
-                          ? 'bg-green-50 text-green-700 border-green-200'
-                          : airdrop.status === 'missed'
-                          ? 'bg-red-50 text-red-700 border-red-200'
-                          : 'bg-yellow-50 text-yellow-700 border-yellow-200',
-                        'rounded-full px-3 py-1 text-xs font-medium border transition-colors duration-200'
-                      )}
-                    >
-                      {airdrop.status.charAt(0).toUpperCase() +
-                        airdrop.status.slice(1)}
-                    </div>
-                  </li>
-                ))
-              ) : (
-                <p className="text-gray-500 text-center py-8 bg-gray-50 rounded-lg">
-                  No airdrops scheduled for this day.
-                </p>
-              )}
-            </ol>
+                    No airdrops scheduled for this day.
+                  </motion.p>
+                )}
+              </AnimatePresence>
+            </motion.div>
           </section>
         </div>
       </div>
