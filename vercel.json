@@ -9,7 +9,6 @@
     "NEXT_PUBLIC_SUPABASE_URL": "https://rnmkajsmpigtwroaflzm.supabase.co",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
   },
-  "analytics": true,
   "github": {
     "enabled": true,
     "silent": true,
