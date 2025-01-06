@@ -21,32 +21,8 @@ const nextConfig = {
       },
     ]
   },
-  experimental: {
-    serverActions: true,
-  },
-  env: {
-    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-  },
-  output: 'standalone',
-  poweredByHeader: false,
-  compress: true,
-  generateBuildId: async () => {
-    return `build-${new Date().toISOString()}`
-  },
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
-  },
-  webpack: (config, { dev, isServer }) => {
-    // Optimize production builds
-    if (!dev && !isServer) {
-      Object.assign(config.resolve.alias, {
-        'react/jsx-runtime.js': 'preact/compat/jsx-runtime',
-        react: 'preact/compat',
-        'react-dom/test-utils': 'preact/test-utils',
-        'react-dom': 'preact/compat',
-      })
-    }
-    return config
   }
 }
 

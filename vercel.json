@@ -7,7 +7,7 @@
   "regions": ["iad1"],
   "env": {
     "NEXT_PUBLIC_SUPABASE_URL": "https://rnmkajsmpigtwroaflzm.supabase.co",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJubWthanNtcGlndHdyb2FmbHptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYxNTczMDYsImV4cCI6MjA1MTczMzMwNn0.0yf14Zr0zKc0pzszhMVTo1MzrlEKkxOdXGj6zOXOCsk"
   },
   "github": {
     "enabled": true,

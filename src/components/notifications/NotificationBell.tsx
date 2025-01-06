@@ -1,3 +1,5 @@
+'use client'
+
 import { useState, useEffect } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { Database } from '@/types/supabase'

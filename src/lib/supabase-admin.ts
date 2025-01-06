@@ -2,11 +2,16 @@ import { createClient } from '@supabase/supabase-js'
 import { Database } from '@/types/supabase'
 
 const supabaseUrl = 'https://rnmkajsmpigtwroaflzm.supabase.co'
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY
+const supabaseServiceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJubWthanNtcGlndHdyb2FmbHptIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczNjE1NzMwNiwiZXhwIjoyMDUxNzMzMzA2fQ.6cLCht25pOiLpbsttdPSUJt6VBBXJLcykZHlZJITgyw'
 
-if (!supabaseServiceKey) {
-  throw new Error('Missing env.SUPABASE_SERVICE_KEY')
-}
-
-// Create Supabase client with service role key (only use server-side)
-export const supabaseAdmin = createClient<Database>(supabaseUrl, supabaseServiceKey)
+// Create Supabase client with service role key (for server-side usage)
+export const supabaseAdmin = createClient<Database>(
+  supabaseUrl,
+  supabaseServiceRoleKey,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  }
+)
