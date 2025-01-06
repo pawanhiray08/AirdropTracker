@@ -17,6 +17,9 @@ import {
   startOfToday,
 } from 'date-fns'
 import { classNames } from '@/lib/utils'
+import { Database } from '@/types/supabase'
+
+type Airdrop = Database['public']['Tables']['airdrops']['Row']
 
 function colStartClasses(day: number): string {
   const cols: { [key: number]: string } = {
@@ -31,22 +34,13 @@ function colStartClasses(day: number): string {
   return cols[day] || ''
 }
 
-interface Airdrop {
-  id: string
-  title: string
-  deadline: string
-  status: string
-}
-
-interface AirdropCalendarProps {
-  airdrops: Airdrop[]
-  onSelectDate?: (date: Date) => void
-}
-
 export default function AirdropCalendar({
   airdrops = [],
   onSelectDate,
-}: AirdropCalendarProps) {
+}: {
+  airdrops: Airdrop[]
+  onSelectDate?: (date: Date) => void
+}) {
   const today = startOfToday()
   const [selectedDay, setSelectedDay] = useState(today)
   const [currentMonth, setCurrentMonth] = useState(format(today, 'MMM-yyyy'))
@@ -57,6 +51,10 @@ export default function AirdropCalendar({
     end: endOfMonth(firstDayCurrentMonth),
   })
 
+  const selectedDayAirdrops = airdrops.filter((airdrop) =>
+    airdrop.deadline ? isSameDay(parseISO(airdrop.deadline), selectedDay) : false
+  )
+
   function previousMonth() {
     const firstDayNextMonth = add(firstDayCurrentMonth, { months: -1 })
     setCurrentMonth(format(firstDayNextMonth, 'MMM-yyyy'))
@@ -66,10 +64,6 @@ export default function AirdropCalendar({
     const firstDayNextMonth = add(firstDayCurrentMonth, { months: 1 })
     setCurrentMonth(format(firstDayNextMonth, 'MMM-yyyy'))
   }
-
-  const selectedDayAirdrops = airdrops.filter((airdrop) =>
-    airdrop.deadline ? isSameDay(parseISO(airdrop.deadline), selectedDay) : false
-  )
 
   return (
     <div className="pt-16">
@@ -109,7 +103,7 @@ export default function AirdropCalendar({
             <div className="grid grid-cols-7 mt-2 text-sm">
               {days.map((day, dayIdx) => {
                 const hasAirdrop = airdrops.some((airdrop) =>
-                  isSameDay(parseISO(airdrop.deadline), day)
+                  airdrop.deadline ? isSameDay(parseISO(airdrop.deadline), day) : false
                 )
 
                 return (
